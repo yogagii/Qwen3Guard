@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 
 try:
     from presidio_analyzer import RecognizerResult, EntityRecognizer
@@ -31,13 +31,92 @@ def _normalize_label(label: str) -> str:
     m = {
         "PER": "PERSON",
         "PERSON": "PERSON",
+        "NR": "PERSON",
         "LOC": "LOCATION",
         "LOCATION": "LOCATION",
         "GPE": "LOCATION",
+        "NS": "LOCATION",
         "ORG": "ORGANIZATION",
         "ORGANIZATION": "ORGANIZATION",
+        "NT": "ORGANIZATION",
+        "PHONE": "PHONE_NUMBER",
+        "TEL": "PHONE_NUMBER",
+        "MOBILE": "PHONE_NUMBER",
+        "EMAIL": "EMAIL_ADDRESS",
+        "MAIL": "EMAIL_ADDRESS",
+        "WWW": "URL",
+        "URL": "URL",
+        "AGE": "AGE",
+        "DATE": "DATE_TIME",
+        "TIME": "DATE_TIME",
+        "DATETIME": "DATE_TIME",
     }
     return m.get((label or "").upper(), (label or "").upper())
+
+
+def _build_token_offsets(text: str, tokens: List[str]) -> List[Tuple[int, int]]:
+    """Map each token to its character start/end offsets in the source text."""
+    offsets: List[Tuple[int, int]] = []
+    cursor = 0
+
+    for token in tokens:
+        if not token:
+            offsets.append((cursor, cursor))
+            continue
+
+        start = text.find(token, cursor)
+        if start < 0:
+            # Fallback for occasional tokenization mismatches. Keep searching
+            # globally so we can still recover a useful span when possible.
+            start = text.find(token)
+        if start < 0:
+            raise ValueError(
+                f"Token {token!r} not found in text starting from position {cursor}."
+            )
+
+        end = start + len(token)
+        offsets.append((start, end))
+        cursor = end
+
+    return offsets
+
+
+def _resolve_candidate_span(
+    text: str,
+    ent_text: Optional[str],
+    start: Any,
+    end: Any,
+    token_offsets: List[Tuple[int, int]],
+    cursor: int,
+) -> Tuple[Optional[int], Optional[int], int]:
+    """
+    Resolve HanLP entity span to character offsets.
+
+    HanLP pipeline NER commonly returns token spans: (entity_text, label, token_start, token_end).
+    Some models may instead return char spans. We detect both.
+    """
+
+    if isinstance(start, int) and isinstance(end, int):
+        # Char-span case
+        if 0 <= start < end <= len(text):
+            return start, end, end
+
+        # Token-span case
+        if 0 <= start < end <= len(token_offsets):
+            char_start = token_offsets[start][0]
+            char_end = token_offsets[end - 1][1]
+            return char_start, char_end, char_end
+
+    # Last-resort fallback: sequential string search
+    if isinstance(ent_text, str) and ent_text:
+        idx = text.find(ent_text, cursor)
+        if idx < 0:
+            idx = text.find(ent_text)
+        if idx >= 0:
+            end_idx = idx + len(ent_text)
+            return idx, end_idx, end_idx
+
+    return None, None, cursor
 
 
 class HanLPNlpEngine:
@@ -101,15 +180,20 @@ class HanLPNlpEngine:
 
         parsed_entities: List[Dict[str, Any]] = []
         candidates = []
+        tokens: List[str] = []
 
         if isinstance(raw, dict):
             # pipeline output usually contains "ner"
+            if "tok" in raw and isinstance(raw["tok"], list):
+                tokens = raw["tok"]
             if "ner" in raw:
                 candidates = raw["ner"]
             elif "entities" in raw:
                 candidates = raw["entities"]
         elif isinstance(raw, list):
             candidates = raw
+
+        token_offsets = _build_token_offsets(text, tokens) if tokens else []
 
         cursor = 0
         for e in candidates:
@@ -138,27 +222,39 @@ class HanLPNlpEngine:
             if label is None:
                 continue
             label = _normalize_label(label)
+            if entities and label not in entities:
+                continue
 
-            # resolve span
-            if not (isinstance(start, int) and isinstance(end, int) and 0 <= start < end <= len(text)):
-                if isinstance(ent_text, str) and ent_text:
-                    idx = text.find(ent_text, cursor)
-                    if idx < 0:
-                        idx = text.find(ent_text)
-                    if idx >= 0:
-                        start = idx
-                        end = idx + len(ent_text)
-                        cursor = end
-                    else:
-                        continue
-                else:
-                    continue
+            start, end, cursor = _resolve_candidate_span(
+                text=text,
+                ent_text=ent_text,
+                start=start,
+                end=end,
+                token_offsets=token_offsets,
+                cursor=cursor,
+            )
+            if start is None or end is None:
+                continue
+
+            if isinstance(ent_text, str) and ent_text and text[start:end] != ent_text:
+                # If the computed span doesn't reproduce the entity text, prefer
+                # a direct search fallback. This catches token/span mismatches.
+                alt_start, alt_end, cursor = _resolve_candidate_span(
+                    text=text,
+                    ent_text=ent_text,
+                    start=None,
+                    end=None,
+                    token_offsets=[],
+                    cursor=cursor,
+                )
+                if alt_start is not None and alt_end is not None:
+                    start, end = alt_start, alt_end
 
             parsed_entities.append(
                 {"start": start, "end": end, "type": label, "score": float(score)}
             )
 
-        return {"tokens": [], "entities": parsed_entities}
+        return {"tokens": tokens, "entities": parsed_entities}
 
 
 class HanLPRecognizer(EntityRecognizer):
