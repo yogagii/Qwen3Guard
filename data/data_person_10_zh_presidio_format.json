@@ -1,0 +1,100 @@
+[
+  {
+    "full_text": "柯晓梅，51岁女性，现居吉林省长春市朝阳区延安大街74号，职业为水管工。她因出现呼吸急促、咳嗽和胸闷等症状被诊断为哮喘，目前正在温迪·格伦医生的指导下服用布洛芬进行治疗。柯晓梅的个人信息包括身份证号220105197307013827，电子邮箱kexiaomei@163.com，手机号码15943218765。她的信用评分为756分，年收入为1,170,289.42元。相关医疗或财务记录的交易明细中包含标识符\"INDO GIBL Indiaforensic STL19071\"。",
+    "masked": "{{PERSON}}，{{AGE}}岁{{GENDER}}性，现居{{LOCATION}}，职业为{{PROFESSION}}。她因出现呼吸急促、咳嗽和胸闷等症状被诊断为{{DIAGNOSIS}}，目前正在{{PERSON}}医生的指导下服用{{MEDICATION}}进行治疗。{{PERSON}}的个人信息包括身份证号22010{{AGE}}97307013827，电子邮箱{{EMAIL_ADDRESS}}，手机号码{{PHONE_NUMBER}}。她的信用评分为{{CREDIT_SCORE}}分，年收入为{{INCOME}}元。相关医疗或财务记录的交易明细中包含标识符\"{{TRANSACTION}}\"。",
+    "spans": [
+      {
+        "entity_type": "PERSON",
+        "entity_value": "柯晓梅",
+        "start_position": 0,
+        "end_position": 3
+      },
+      {
+        "entity_type": "AGE",
+        "entity_value": "51",
+        "start_position": 4,
+        "end_position": 6
+      },
+      {
+        "entity_type": "GENDER",
+        "entity_value": "女",
+        "start_position": 7,
+        "end_position": 8
+      },
+      {
+        "entity_type": "LOCATION",
+        "entity_value": "吉林省长春市朝阳区延安大街74号",
+        "start_position": 12,
+        "end_position": 28
+      },
+      {
+        "entity_type": "PROFESSION",
+        "entity_value": "水管工",
+        "start_position": 32,
+        "end_position": 35
+      },
+      {
+        "entity_type": "DIAGNOSIS",
+        "entity_value": "哮喘",
+        "start_position": 57,
+        "end_position": 59
+      },
+      {
+        "entity_type": "PERSON",
+        "entity_value": "温迪·格伦",
+        "start_position": 64,
+        "end_position": 69
+      },
+      {
+        "entity_type": "MEDICATION",
+        "entity_value": "布洛芬",
+        "start_position": 77,
+        "end_position": 80
+      },
+      {
+        "entity_type": "PERSON",
+        "entity_value": "柯晓梅",
+        "start_position": 85,
+        "end_position": 88
+      },
+      {
+          "entity_type": "ID",
+          "entity_value": "220105197307013827",
+          "start_position": 99,
+          "end_position": 117
+      },
+      {
+        "entity_type": "EMAIL_ADDRESS",
+        "entity_value": "kexiaomei@163.com",
+        "start_position": 122,
+        "end_position": 139
+      },
+      {
+        "entity_type": "PHONE_NUMBER",
+        "entity_value": "15943218765",
+        "start_position": 144,
+        "end_position": 155
+      },
+      {
+        "entity_type": "CREDIT_SCORE",
+        "entity_value": "756",
+        "start_position": 163,
+        "end_position": 166
+      },
+      {
+        "entity_type": "INCOME",
+        "entity_value": "1,170,289.42",
+        "start_position": 172,
+        "end_position": 184
+      },
+      {
+        "entity_type": "TRANSACTION",
+        "entity_value": "INDO GIBL Indiaforensic STL19071",
+        "start_position": 207,
+        "end_position": 239
+      }
+    ],
+    "template_id": 24,
+    "metadata": null
+  }
+]
