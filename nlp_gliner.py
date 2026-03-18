@@ -1,20 +1,22 @@
 import os
 
 # Force CPU by default on this machine.
-os.environ["CUDA_VISIBLE_DEVICES"] = ""
+# os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 from presidio_analyzer import AnalyzerEngine, RecognizerRegistry
 from presidio_anonymizer import AnonymizerEngine
 
 from gliner_engine import GLiNERNlpEngine, GLiNERRecognizer, GLINER_LABEL_MAPPING
+from gliner import GLiNER
 
-
-MODEL_NAME = "/home/capcom/models/gliner-multi-edu"
+# MODEL_NAME = "/home/capcom/models/gliner-multi-edu"
+gliner_model = GLiNER.from_pretrained("Ihor/gliner-multi-edu")
+# gliner_model = GLiNER.from_pretrained("urchade/gliner_multi-v2.1")
 THRESHOLD = 0.3
 LABELS = list(GLINER_LABEL_MAPPING.keys())
 
 nlp_engine = GLiNERNlpEngine(
-    model_name=MODEL_NAME,
+    model_name=gliner_model,
     labels=LABELS,
     label_mapping=GLINER_LABEL_MAPPING,
     threshold=THRESHOLD,
