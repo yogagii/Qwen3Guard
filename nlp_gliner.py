@@ -7,16 +7,15 @@ from presidio_analyzer import AnalyzerEngine, RecognizerRegistry
 from presidio_anonymizer import AnonymizerEngine
 
 from gliner_engine import GLiNERNlpEngine, GLiNERRecognizer, GLINER_LABEL_MAPPING
-from gliner import GLiNER
 
 # MODEL_NAME = "/home/capcom/models/gliner-multi-edu"
-gliner_model = GLiNER.from_pretrained("Ihor/gliner-multi-edu")
-# gliner_model = GLiNER.from_pretrained("urchade/gliner_multi-v2.1")
+MODEL_NAME = "Ihor/gliner-multi-edu"
+# MODEL_NAME = "urchade/gliner_multi-v2.1"
 THRESHOLD = 0.3
 LABELS = list(GLINER_LABEL_MAPPING.keys())
 
 nlp_engine = GLiNERNlpEngine(
-    model_name=gliner_model,
+    model_name=MODEL_NAME,
     labels=LABELS,
     label_mapping=GLINER_LABEL_MAPPING,
     threshold=THRESHOLD,
