@@ -22,7 +22,8 @@ model_config = [
     {"lang_code": "en",
      "model_name": {
          "spacy": "en_core_web_sm", # for tokenization, lemmatization
-         "transformers": "StanfordAIMI/stanford-deidentifier-base"
+         "transformers": "/home/capcom/models/stanford-deidentifier-base"
+
     }
 }]
 

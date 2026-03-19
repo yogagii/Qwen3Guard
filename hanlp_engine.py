@@ -1,3 +1,4 @@
+import re
 from typing import List, Dict, Any, Optional, Tuple
 
 try:
@@ -15,15 +16,9 @@ SUPPORTED_ENTITIES = [
     "PHONE_NUMBER",
     "EMAIL_ADDRESS",
     "ID",
-    "IP_ADDRESS",
-    "MAC_ADDRESS",
     "LOCATION",
-    "DATE_TIME",
     "AGE",
-    "ORGANIZATION",
-    "URL",
-    "IBAN_CODE",
-    "CRYPTO",
+    'GENDER'
 ]
 
 
@@ -39,11 +34,9 @@ def _normalize_label(label: str) -> str:
         "ORG": "ORGANIZATION",
         "ORGANIZATION": "ORGANIZATION",
         "NT": "ORGANIZATION",
-        "PHONE": "PHONE_NUMBER",
-        "TEL": "PHONE_NUMBER",
-        "MOBILE": "PHONE_NUMBER",
         "EMAIL": "EMAIL_ADDRESS",
         "MAIL": "EMAIL_ADDRESS",
+        "ID": "ID",
         "WWW": "URL",
         "URL": "URL",
         "AGE": "AGE",
@@ -52,6 +45,31 @@ def _normalize_label(label: str) -> str:
         "DATETIME": "DATE_TIME",
     }
     return m.get((label or "").upper(), (label or "").upper())
+
+
+_CN_PHONE_RE = re.compile(r"^(?:\+?86[- ]?)?1[3-9]\d{9}$")
+_CN_ID_RE = re.compile(r"^\d{17}[\dXx]$")
+
+
+def _normalize_label_for_text(label: str, ent_text: Optional[str]) -> str:
+    normalized = _normalize_label(label)
+
+    if normalized in {"PHONE", "TEL", "MOBILE"}:
+        normalized = "PHONE_NUMBER"
+
+    if normalized == "PHONE_NUMBER" and isinstance(ent_text, str):
+        candidate = ent_text.strip()
+        if _CN_ID_RE.fullmatch(candidate):
+            return "ID"
+        if _CN_PHONE_RE.fullmatch(candidate):
+            return "PHONE_NUMBER"
+
+    if normalized == "POSTALCODE" and isinstance(ent_text, str):
+        candidate = ent_text.strip()
+        if _CN_ID_RE.fullmatch(candidate):
+            return "ID"
+
+    return normalized
 
 
 def _build_token_offsets(text: str, tokens: List[str]) -> List[Tuple[int, int]]:
@@ -221,7 +239,7 @@ class HanLPNlpEngine:
 
             if label is None:
                 continue
-            label = _normalize_label(label)
+            label = _normalize_label_for_text(label, ent_text)
             if entities and label not in entities:
                 continue
 

@@ -4,23 +4,19 @@ from presidio_evaluator import InputSample
 from presidio_evaluator.models import BaseModel
 from presidio_evaluator.span_to_tag import span_to_tag
 
-from hanlp_engine import HanLPNlpEngine, HanLPRecognizer
-
-
 class HanLPModelWrapper(BaseModel):
     """
-    Evaluator-facing wrapper for HanLP + Presidio recognizer.
+    Evaluator-facing wrapper for a full Presidio AnalyzerEngine.
 
     This intentionally avoids PresidioAnalyzerWrapper/BatchAnalyzerEngine because
-    the custom HanLP analyzer path does not get translated into token tags
-    correctly there. Instead, we directly call HanLPRecognizer.analyze() and
-    convert the returned spans to evaluator tags.
+    the custom HanLP analyzer path did not get translated into token tags
+    correctly there. Instead, we call analyzer_engine.analyze() directly and
+    convert the returned RecognizerResults into evaluator tags.
     """
 
     def __init__(
         self,
-        recognizer: HanLPRecognizer,
-        nlp_engine: HanLPNlpEngine,
+        analyzer_engine,
         entities_to_keep: List[str] = None,
         labeling_scheme: str = "IO",
         entity_mapping: Optional[Dict[str, str]] = None,
@@ -33,19 +29,15 @@ class HanLPModelWrapper(BaseModel):
             labeling_scheme=labeling_scheme,
             entity_mapping=entity_mapping,
         )
-        self.recognizer = recognizer
-        self.nlp_engine = nlp_engine
+        self.analyzer_engine = analyzer_engine
         self.language = language
         self.name = "HanLP Model Wrapper"
 
-        if not self.nlp_engine.is_loaded():
-            self.nlp_engine.load()
-
     def _predict_results(self, sample: InputSample):
-        return self.recognizer.analyze(
+        return self.analyzer_engine.analyze(
             text=sample.full_text,
+            language=self.language,
             entities=self.entities,
-            nlp_artifacts=None,
         )
 
     def predict(self, sample: InputSample, **kwargs) -> List[str]:
@@ -81,7 +73,7 @@ class HanLPModelWrapper(BaseModel):
         data.update(
             {
                 "language": self.language,
-                "recognizer": getattr(self.recognizer, "name", "HanLPRecognizer"),
+                "analyzer": self.analyzer_engine.__class__.__name__,
             }
         )
         return data

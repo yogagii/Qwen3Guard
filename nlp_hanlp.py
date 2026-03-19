@@ -19,6 +19,54 @@ recognizer = HanLPRecognizer(nlp_engine)
 registry = RecognizerRegistry(supported_languages=["zh"])
 registry.add_recognizer(recognizer)
 
+from presidio_analyzer import PatternRecognizer, Pattern
+
+email_pattern = Pattern(
+    name="email",
+    regex=r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}",
+    score=0.85,
+)
+
+
+email_recognizer = PatternRecognizer(
+    supported_entity="EMAIL_ADDRESS",
+    patterns=[email_pattern],
+    name="EmailRecognizer",
+    supported_language="zh",
+)
+
+registry.add_recognizer(email_recognizer)
+
+phone_pattern = Pattern(
+    name="cn_phone",
+    regex=r"(?<!\d)(?:\+?86[- ]?)?1[3-9]\d{9}(?!\d)",
+    score=0.9,
+)
+
+phone_recognizer = PatternRecognizer(
+    supported_entity="PHONE_NUMBER",
+    patterns=[phone_pattern],
+    name="PhoneRecognizer",
+    supported_language="zh",
+)
+
+registry.add_recognizer(phone_recognizer)
+
+id_pattern = Pattern(
+    name="cn_id",
+    regex=r"(?<!\d)\d{17}[\dXx](?!\d)",
+    score=0.95,
+)
+
+id_recognizer = PatternRecognizer(
+    supported_entity="ID",
+    patterns=[id_pattern],
+    name="IdRecognizer",
+    supported_language="zh",
+)
+
+registry.add_recognizer(id_recognizer)
+
 analyzer = AnalyzerEngine(
     nlp_engine=nlp_engine,
     registry=registry,
@@ -27,7 +75,7 @@ analyzer = AnalyzerEngine(
 
 anonymizer = AnonymizerEngine()
 
-cn_text = "白雅宁是一位43岁的女性口腔卫生师，现居住于黑龙江省哈尔滨市南岗区中山路123号，可通过邮箱baiyaning@163.com或手机13945671234联系。她的身份证号码为230103198008273629。近期她出现不明肿块、持续疲劳和体重下降等症状，经诊断为癌症。目前正在韩雪梅医生的指导下使用青霉素进行治疗。白雅宁的信用评分为850分，年收入为56万元人民币。最近的交易记录包括一笔央行内部资金划转。"
+cn_text = "陶立轩是一位62岁的男性软件开发工程师。他居住在浙江省杭州市西湖区文三路826号，持有身份证号330106196012139416。他的电子邮箱是taolixuan@163.com，联系电话是13857123456。他被诊断为肥胖症，症状包括体重超标、呼吸短促和关节不适。他的主治医生张敏华为他开具了布洛芬缓释胶囊。陶立轩的信用评分为608分，年收入为785,798.06元。最近有一笔来自印度法证服务的转账记录。"
 
 print(cn_text)
 results_chinese = analyzer.analyze(text=cn_text, language="zh")
