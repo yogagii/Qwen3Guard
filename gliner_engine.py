@@ -29,7 +29,7 @@ SUPPORTED_ENTITIES = [
 GLINER_LABEL_MAPPING = {
     "person": "PERSON",
     "location": "LOCATION",
-    "organization": "ORGANIZATION",
+    #"organization": "ORGANIZATION",
     "age": "AGE",
     "email address": "EMAIL_ADDRESS",
     "phone number": "PHONE_NUMBER",

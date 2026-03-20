@@ -44,3 +44,21 @@ def register_zh_pattern_recognizers(registry):
         supported_language="zh",
     )
     registry.add_recognizer(id_recognizer)
+
+    gender_pattern = Pattern(
+        name="cn_gender",
+        regex=(
+            r"(男性|女性|先生|女士|小姐)"
+            r"|(?:(?<=性别)|(?<=性别为)|(?<=性别是)|(?<=\d岁)|(?<=\d岁的))(男|女)"
+        ),
+        score=0.8,
+    )
+
+    gender_recognizer = PatternRecognizer(
+        supported_entity="GENDER",
+        patterns=[gender_pattern],
+        name="GenderRecognizer",
+        supported_language="zh",
+    )
+
+    registry.add_recognizer(gender_recognizer)
