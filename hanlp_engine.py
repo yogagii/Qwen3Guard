@@ -22,6 +22,21 @@ SUPPORTED_ENTITIES = [
 ]
 
 
+def _iter_exact_matches(text: str, needle: str) -> List[Tuple[int, int]]:
+    matches: List[Tuple[int, int]] = []
+    if not needle:
+        return matches
+
+    start = 0
+    while True:
+        idx = text.find(needle, start)
+        if idx < 0:
+            break
+        matches.append((idx, idx + len(needle)))
+        start = idx + len(needle)
+    return matches
+
+
 def _normalize_label(label: str) -> str:
     m = {
         "PER": "PERSON",
@@ -97,6 +112,44 @@ def _build_token_offsets(text: str, tokens: List[str]) -> List[Tuple[int, int]]:
         cursor = end
 
     return offsets
+
+
+def _pick_tokens(raw: Dict[str, Any]) -> List[str]:
+    for key in ("tok", "tok/coarse", "tok/fine"):
+        value = raw.get(key)
+        if isinstance(value, list) and value:
+            return value
+    return []
+
+
+def _pick_candidates(raw: Dict[str, Any]) -> List[Any]:
+    preferred_keys = (
+        "ner",
+        "ner/msra",
+        "ner/ontonotes",
+        "ner/pku",
+        "entities",
+    )
+
+    for key in preferred_keys:
+        value = raw.get(key)
+        if isinstance(value, list) and value:
+            return value
+        if isinstance(value, dict):
+            merged: List[Any] = []
+            for nested in value.values():
+                if isinstance(nested, list):
+                    merged.extend(nested)
+            if merged:
+                return merged
+
+    merged: List[Any] = []
+    for key, value in raw.items():
+        if not isinstance(key, str) or not key.startswith("ner/"):
+            continue
+        if isinstance(value, list):
+            merged.extend(value)
+    return merged
 
 
 def _resolve_candidate_span(
@@ -201,13 +254,9 @@ class HanLPNlpEngine:
         tokens: List[str] = []
 
         if isinstance(raw, dict):
-            # pipeline output usually contains "ner"
-            if "tok" in raw and isinstance(raw["tok"], list):
-                tokens = raw["tok"]
-            if "ner" in raw:
-                candidates = raw["ner"]
-            elif "entities" in raw:
-                candidates = raw["entities"]
+            # Support both simple tok->ner pipelines and HanLP multi-task outputs.
+            tokens = _pick_tokens(raw)
+            candidates = _pick_candidates(raw)
         elif isinstance(raw, list):
             candidates = raw
 
@@ -282,6 +331,7 @@ class HanLPRecognizer(EntityRecognizer):
         supported_entities: Optional[List[str]] = None,
         name: str = "HanLPRecognizer",
         score_threshold: float = 0.5,
+        enable_same_name_backfill: bool = True,
     ):
         entities = supported_entities or SUPPORTED_ENTITIES
         try:
@@ -293,6 +343,7 @@ class HanLPRecognizer(EntityRecognizer):
 
         self.nlp_engine = nlp_engine
         self.score_threshold = score_threshold
+        self.enable_same_name_backfill = enable_same_name_backfill
 
     def analyze(
         self,
@@ -311,6 +362,7 @@ class HanLPRecognizer(EntityRecognizer):
 
         requested = set(entities or self.supported_entities)
         out = []
+        seen_spans = set()
         for ent in artifacts.get("entities", []):
             etype = None
             start = None
@@ -343,6 +395,7 @@ class HanLPRecognizer(EntityRecognizer):
                 and 0 <= start < end <= len(text)
                 and score >= self.score_threshold
             ):
+                seen_spans.add((etype, start, end))
                 out.append(
                     RecognizerResult(
                         entity_type=etype,
@@ -351,4 +404,25 @@ class HanLPRecognizer(EntityRecognizer):
                         score=score,
                     )
                 )
+
+        if self.enable_same_name_backfill and "PERSON" in requested:
+            person_names = {
+                text[result.start:result.end]
+                for result in out
+                if result.entity_type == "PERSON" and text[result.start:result.end]
+            }
+            for person_name in person_names:
+                for start, end in _iter_exact_matches(text, person_name):
+                    key = ("PERSON", start, end)
+                    if key in seen_spans:
+                        continue
+                    seen_spans.add(key)
+                    out.append(
+                        RecognizerResult(
+                            entity_type="PERSON",
+                            start=start,
+                            end=end,
+                            score=self.score_threshold,
+                        )
+                    )
         return out
