@@ -19,18 +19,11 @@ except Exception:
 SUPPORTED_ENTITIES = [
     "PERSON",
     "LOCATION",
-    "ORGANIZATION",
     "AGE",
     "EMAIL_ADDRESS",
     "PHONE_NUMBER",
     "ID",
-    "GENDER",
-    "PROFESSION",
-    "DIAGNOSIS",
-    "MEDICATION",
-    "TRANSACTION",
-    "INCOME",
-    "CREDIT_SCORE",
+    "CREDIT_CARD"
 ]
 
 GLINER_LABEL_MAPPING = {
@@ -40,14 +33,8 @@ GLINER_LABEL_MAPPING = {
     "age": "AGE",
     "email address": "EMAIL_ADDRESS",
     "phone number": "PHONE_NUMBER",
-    "personal identification number": "ID",
-    "gender": "GENDER",
-    "profession": "PROFESSION",
-    "medical condition": "DIAGNOSIS",
-    "medication": "MEDICATION",
-    "transaction": "TRANSACTION",
-    "income": "INCOME",
-    "credit score": "CREDIT_SCORE",
+    "credit_card": "CREDIT_CARD",
+    "gender": "gender"
 }
 
 
